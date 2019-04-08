@@ -1,3 +1,6 @@
+name: EC2 + Route53 + S3
+version: 2
+formatVersion: 1
 inputs:
   reservationname:
     type: string
