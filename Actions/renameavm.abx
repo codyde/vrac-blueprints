@@ -1,5 +1,7 @@
 ---
-name: "Rename a VM Again"
+exportVersion: "2"
+exportId: "8a769d3969c39f3e0169c4f9614100d8"
+name: "GitHub Sync - Rename VM"
 runtime: "python"
 entrypoint: "handler"
 timeoutSeconds: 180
