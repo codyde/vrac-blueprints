@@ -10,7 +10,7 @@ def handler(context, inputs):
     """
     old_name = inputs["resourceNames"][0]
     new_name = inputs["customProperties"]["newName"]
-    #new comment
+    #new comment updating data
 
     outputs = {}
     outputs["resourceNames"] = inputs["resourceNames"]
