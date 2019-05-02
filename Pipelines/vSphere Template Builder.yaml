@@ -1,0 +1,69 @@
+---
+project: CloudBuilders
+kind: PIPELINE
+name: vSphere Template Builder
+enabled: true
+concurrency: 10
+ciWorkspace:
+  endpoint: ''
+  image: ''
+  registry: ''
+  path: ''
+  cache:
+  - ''
+stageOrder:
+- Build
+- Clean
+stages:
+  Build:
+    taskOrder:
+    - Build Deployment
+    tasks:
+      Build Deployment:
+        type: Blueprint
+        input:
+          blueprint: vSphere Template Builder
+          action: CreateDeployment
+          deploymentName: Ubuntu 18 - Packer Automated Build
+          version: '9'
+          parameters: {
+            host: hltenesxi01.humblelab.com,
+            folder: _Templates,
+            cluster: Tenant,
+            network: VM Network,
+            password: password!,
+            username: administrator@vsphere.local,
+            datastore: vsanDatastore,
+            ssh_password: password!,
+            ssh_username: hladmin,
+            vcenter_server: hlcorevc01.humblelab.com
+          }
+  Clean:
+    taskOrder:
+    - Delete Builder
+    tasks:
+      Delete Builder:
+        type: Blueprint
+        input:
+          _deploymentFlag: false
+          action: DeleteDeployment
+          deploymentName: ${Build.Build Deployment.output.deploymentName}
+notifications:
+  email:
+  - stage: Build
+    subject: Ubuntu 18 Build Completed
+    event: SUCCESS
+    task: Build Deployment
+    endpoint: Codestream-Default-Email
+    body: We have completed the build with the following deployment name in Cloud Assembly - ${Build.Build
+      Deployment.output.deploymentName}
+    to:
+    - cdearkland@vmware.com
+  - stage: Clean
+    subject: Builder Removed
+    event: SUCCESS
+    task: Delete Builder
+    endpoint: Codestream-Default-Email
+    body: ''
+    to:
+    - cdearkland@vmware.com

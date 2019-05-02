@@ -1,0 +1,310 @@
+---
+project: CloudBuilders
+kind: PIPELINE
+name: CMBU Bootcamp Demo
+enabled: true
+concurrency: 10
+options: [
+  GIT_TRIGGER]
+input:
+  GIT_SERVER_URL: ''
+  GIT_BRANCH_NAME: ''
+  GIT_COMMIT_ID: ''
+  GIT_EVENT_TIMESTAMP: ''
+  GIT_EVENT_DESCRIPTION: ''
+  GIT_REPO_NAME: ''
+  GIT_EVENT_OWNER_NAME: ''
+  GIT_CHANGE_SUBJECT: ''
+ciWorkspace:
+  endpoint: Photon-Docker
+  image: harbor.humblelab.com/library/hlbuilder:latest
+  registry: ''
+  path: ''
+  cache:
+  - ''
+stageOrder:
+- Build
+- Deploy
+- Test
+- Teardown
+stages:
+  Test:
+    taskOrder:
+    - Sleep for LB
+    - Check URL
+    - Notify via Slack
+    tasks:
+      Sleep for LB:
+        type: CI
+        ignoreFailure: true
+        input:
+          process: [
+            ]
+          steps: [
+            sleep 60]
+          export: [
+            ]
+          artifacts: [
+            ]
+      Notify via Slack:
+        type: REST
+        ignoreFailure: true
+        input:
+          headers: {
+            Accept: application/json,
+            Content-Type: application/json
+          }
+          payload: '{"text":"The Deployment is successful!\n Your URL is http://${Deploy.Expose Frontend
+            LB.output.response.loadBalancers.frontend.ingress[0].ip}"}'
+          action: post
+          url: https://hooks.slack.com/services/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
+      Check URL:
+        type: REST
+        ignoreFailure: true
+        input:
+          headers: {
+            Accept: application/json,
+            Content-Type: application/json
+          }
+          action: get
+          url: http://${Deploy.Expose Frontend LB.output.response.loadBalancers.frontend.ingress[0].ip}/api/health
+  Build:
+    taskOrder:
+    - DockerBuildDB
+    - DockerBuildApp
+    - DockerBuildFrontend
+    tasks:
+      DockerBuildFrontend:
+        type: CI
+        input:
+          process: [
+            ]
+          steps: [
+            cd cmbu-bootcamp-app/frontend-tier,
+            'export IMAGE=harbor.humblelab.com/library/cmbu-app-frontend:latest',
+            'export DOCKER_HOST=tcp://192.168.1.182:2375',
+            docker login harbor.humblelab.com --username=admin --password=password!,
+            docker build -t $IMAGE --file ./Dockerfile .,
+            docker push $IMAGE]
+          export: [
+            IMAGE]
+          artifacts: [
+            ]
+      DockerBuildDB:
+        type: CI
+        ignoreFailure: true
+        input:
+          process: [
+            ]
+          steps: [
+            cd cmbu-bootcamp-app/db-tier,
+            'export IMAGE=harbor.humblelab.com/library/cmbu-db-app:latest',
+            'export DOCKER_HOST=tcp://192.168.1.182:2375',
+            docker login harbor.humblelab.com --username=admin --password=password!,
+            docker build -t $IMAGE --file ./Dockerfile .,
+            docker push $IMAGE]
+          export: [
+            IMAGE]
+          artifacts: [
+            ]
+      DockerBuildApp:
+        type: CI
+        ignoreFailure: true
+        input:
+          process: [
+            ]
+          steps: [
+            cd cmbu-bootcamp-app/app-tier,
+            'export IMAGE=harbor.humblelab.com/library/cmbu-app-backend:latest',
+            'export DOCKER_HOST=tcp://192.168.1.182:2375',
+            docker login harbor.humblelab.com --username admin --password=password!,
+            docker build -t $IMAGE --file ./Dockerfile .,
+            docker push $IMAGE]
+          export: [
+            IMAGE]
+          artifacts: [
+            ]
+  Teardown:
+    taskOrder:
+    - Approval Required
+    - Delete Workload
+    tasks:
+      Delete Workload:
+        type: K8S
+        endpoints:
+          kubernetesServer: Dev-VKE-Cluster
+        input:
+          filePath: ''
+          commit: ''
+          namespace: ''
+          scmConstants: {
+            }
+          action: DELETE
+          filterByLabel: ''
+          continueOnConflict: false
+          timeout: '5'
+          yaml: "apiVersion: v1\r\nkind: Namespace\r\nmetadata:\r\n  name: ${input.GIT_COMMIT_ID}-namespace"
+          revision: n-1
+      Approval Required:
+        type: UserOperation
+        input:
+          summary: Approval Request
+          pipelineName: ${name}
+          approvers: [
+            cdearkland@vmware.com]
+          description: K8s Deployment Successful. Destroy request received
+          sendemail: false
+  Deploy:
+    taskOrder:
+    - Create Namespace
+    - Deploy DB,Deploy App Tier
+    - Expose DB Service,Expose App Service
+    - Deploy Frontend
+    - Expose Frontend LB
+    tasks:
+      Deploy App Tier:
+        type: K8S
+        endpoints:
+          kubernetesServer: Dev-VKE-Cluster
+        input:
+          filePath: ''
+          commit: ''
+          namespace: ''
+          scmConstants: {
+            }
+          action: CREATE
+          filterByLabel: ''
+          continueOnConflict: false
+          timeout: '5'
+          yaml: "apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2\r\nkind: Deployment\r\
+            \nmetadata:\r\n  name: pyapi\r\n  namespace: ${input.GIT_COMMIT_ID}-namespace\r\n  labels:\r\
+            \n    app: bootcamp\r\nspec:\r\n  selector:\r\n    matchLabels:\r\n      app: bootcamp\r\n\
+            \      role: api\r\n      tier: backend\r\n  replicas: 1\r\n  template:\r\n    metadata:\r\
+            \n      labels:\r\n        app: bootcamp\r\n        role: api\r\n        tier: backend\r\n\
+            \    spec:\r\n      containers:\r\n      - name: pyapi\r\n        image: harbor.humblelab.com/library/cmbu-app-backend:latest\
+            \  # or just image: redis\r\n        ports:\r\n        - containerPort: 80"
+          revision: n-1
+      Create Namespace:
+        type: K8S
+        endpoints:
+          kubernetesServer: Dev-VKE-Cluster
+        input:
+          filePath: ''
+          commit: ''
+          namespace: ''
+          scmConstants: {
+            }
+          action: CREATE
+          filterByLabel: ''
+          continueOnConflict: false
+          timeout: '5'
+          yaml: "apiVersion: v1\r\nkind: Namespace\r\nmetadata:\r\n  name: ${input.GIT_COMMIT_ID}-namespace"
+          revision: n-1
+      Expose Frontend LB:
+        type: K8S
+        endpoints:
+          kubernetesServer: Dev-VKE-Cluster
+        input:
+          filePath: ''
+          commit: ''
+          namespace: ''
+          scmConstants: {
+            }
+          action: CREATE
+          filterByLabel: ''
+          continueOnConflict: false
+          timeout: '5'
+          yaml: "apiVersion: v1\r\nkind: Service\r\nmetadata:\r\n  labels:\r\n    app: bootcamp\r\n  \
+            \  role: web\r\n    tier: frontend\r\n  name: frontend\r\n  namespace: ${input.GIT_COMMIT_ID}-namespace\r\
+            \nspec:\r\n  ports:\r\n  - port: 80\r\n    protocol: TCP\r\n    targetPort: 80\r\n  selector:\r\
+            \n    app: bootcamp\r\n    role: web\r\n    tier: frontend\r\n  type: LoadBalancer"
+          revision: n-1
+      Deploy Frontend:
+        type: K8S
+        endpoints:
+          kubernetesServer: Dev-VKE-Cluster
+        input:
+          filePath: ''
+          commit: ''
+          namespace: ''
+          scmConstants: {
+            }
+          action: CREATE
+          filterByLabel: ''
+          continueOnConflict: false
+          timeout: '5'
+          yaml: "apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2\r\nkind: Deployment\r\
+            \nmetadata:\r\n  name: cmbu-app-frontend\r\n  namespace: ${input.GIT_COMMIT_ID}-namespace\r\
+            \n  labels:\r\n    app: bootcamp\r\nspec:\r\n  selector:\r\n    matchLabels:\r\n      app:\
+            \ bootcamp\r\n      role: web\r\n      tier: frontend\r\n  replicas: 2\r\n  template:\r\n\
+            \    metadata:\r\n      labels:\r\n        app: bootcamp\r\n        role: web\r\n        tier:\
+            \ frontend\r\n    spec:\r\n      containers:\r\n      - name: frontend\r\n        image: harbor.humblelab.com/library/cmbu-app-frontend:latest\
+            \  # or just image: redis\r\n        ports:\r\n        - containerPort: 80"
+          revision: n-1
+      Expose App Service:
+        type: K8S
+        endpoints:
+          kubernetesServer: Dev-VKE-Cluster
+        input:
+          filePath: ''
+          commit: ''
+          namespace: ''
+          scmConstants: {
+            }
+          action: CREATE
+          filterByLabel: ''
+          continueOnConflict: false
+          timeout: '1'
+          yaml: "apiVersion: v1\r\nkind: Service\r\nmetadata:\r\n  name: pyapi\r\n  namespace: ${input.GIT_COMMIT_ID}-namespace\r\
+            \n  labels:\r\n    app: bootcamp\r\n    role: api\r\n    tier: backend\r\nspec:\r\n  ports:\r\
+            \n  - port: 80\r\n  selector:\r\n    app: bootcamp\r\n    role: api\r\n    tier: backend"
+          revision: n-1
+      Deploy DB:
+        type: K8S
+        endpoints:
+          kubernetesServer: Dev-VKE-Cluster
+        input:
+          filePath: ''
+          commit: ''
+          namespace: ''
+          scmConstants: {
+            }
+          action: CREATE
+          filterByLabel: ''
+          continueOnConflict: false
+          timeout: '5'
+          yaml: "apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2\r\nkind: Deployment\r\
+            \nmetadata:\r\n  name: db\r\n  namespace: ${input.GIT_COMMIT_ID}-namespace\r\n  labels:\r\n\
+            \    app: bootcamp\r\nspec:\r\n  selector:\r\n    matchLabels:\r\n      app: bootcamp\r\n\
+            \      role: db\r\n      tier: backend\r\n  replicas: 1\r\n  template:\r\n    metadata:\r\n\
+            \      labels:\r\n        app: bootcamp\r\n        role: db\r\n        tier: backend\r\n \
+            \   spec:\r\n      containers:\r\n      - name: db\r\n        image: harbor.humblelab.com/library/cmbu-db-app:latest\r\
+            \n        ports:\r\n        - containerPort: 5432"
+          revision: n-1
+      Expose DB Service:
+        type: K8S
+        endpoints:
+          kubernetesServer: Dev-VKE-Cluster
+        input:
+          filePath: ''
+          commit: ''
+          namespace: ''
+          scmConstants: {
+            }
+          action: CREATE
+          filterByLabel: ''
+          continueOnConflict: false
+          timeout: '1'
+          yaml: "apiVersion: v1\r\nkind: Service\r\nmetadata:\r\n  name: db\r\n  namespace: ${input.GIT_COMMIT_ID}-namespace\r\
+            \n  labels:\r\n    app: bootcamp\r\n    role: db\r\n    tier: backend\r\nspec:\r\n  ports:\r\
+            \n  - port: 5432\r\n  selector:\r\n    app: bootcamp\r\n    role: db\r\n    tier: backend"
+          revision: n-1
+notifications:
+  webhook:
+  - headers:
+      content-type: application/json
+    stage: Teardown
+    payload: '{"text":"Your deployment of ${input.GIT_REPO_NAME} is waiting for approval to destroy"}'
+    task: Approval Required
+    url: https://hooks.slack.com/services/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
+    event: WAITING
