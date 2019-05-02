@@ -1,0 +1,44 @@
+formatVersion: 1
+name: "Amazon EC2 + Amazon DB"
+version: 1
+inputs:
+  dbname:
+    type: string
+  dbtype:
+    type: string
+    enum:
+      - postgres
+      - mysql
+resources:
+  EC2-Web:
+    type: Cloud.AWS.EC2.Instance
+    properties:
+      image: ubuntu
+      flavor: medium
+      cloudConfig: |
+        #cloud-config
+        packages:
+          - nginx
+      tags:
+        - key: cas
+          value: demo
+      constraints:
+        - tag: 'env:aws'
+  Cloud_Service_AWS_DB_Instance_1:
+    type: Cloud.Service.AWS.DB.Instance
+    dependsOn:
+      - EC2-Web
+    properties:
+      identifier: '${input.dbname}'
+      allocated_storage: 20
+      storage_type: gp2
+      engine: '${input.dbtype}'
+      engine_version: '${input.dbtype == "postgres" ? "10.1" : "5.7"}'
+      account: Amazon Web Services
+      instance_class: db.t2.micro
+      provider_region: us-west-1
+      name: '${input.dbname}'
+      username: foo
+      password: foobarbaz
+      publicly_accessible: true
+      skip_final_snapshot: true

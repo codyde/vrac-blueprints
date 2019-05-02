@@ -1,0 +1,23 @@
+formatVersion: 1
+inputs: {}
+resources:
+  Cloud_Azure_Machine_1:
+    type: Cloud.Azure.Machine
+    properties:
+      image: ubuntu
+      flavor: medium
+      constraints:
+        - tag: 'cloud:azure'
+  Cloud_Service_Azure_Redis_Cache_1:
+    type: Cloud.Service.Azure.Redis.Cache
+    dependsOn:
+      - Cloud_Azure_Machine_1
+    properties:
+      name: testing
+      family: C
+      region: West US
+      account: Microsoft Azure
+      capacity: 0
+      sku_name: Basic
+      redis_configuration: []
+      resource_group_name: Azure-RG

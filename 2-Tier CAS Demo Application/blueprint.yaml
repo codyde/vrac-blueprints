@@ -13,27 +13,13 @@ inputs:
     default: vSphere
   sshKey:
     type: string
-    encrypted: true
+    maxLength: 500
   envsize:
     type: string
     enum:
       - Small
       - Large
 resources:
-  Cloud_LoadBalancer_1:
-    type: Cloud.LoadBalancer
-    properties:
-      count: '${input.envsize == "Small" ? 0 : 1}'
-      name: lb
-      routes:
-        - port: '80'
-          protocol: http
-          instancePort: '80'
-          instanceProtocol: http
-      network: '${resource.Cloud_Network_1.name}'
-      instances:
-        - '${resource.frontend.id}'
-      internetFacing: false
   frontend:
     type: Cloud.Machine
     properties:
@@ -45,9 +31,10 @@ resources:
         authentication: publicPrivateKey
         sshKey: '${input.sshKey}'
       cloudConfig: |
+        packages:
+          - nginx
         runcmd:
           - echo ${resource.apitier.networks[0].address}
-          - apt install -y nginx 
           - /usr/bin/git clone https://github.com/codyde/frontend-demoapp /tmp/cas-demo-application
           - /bin/rm -rf /etc/nginx/conf.d/*
           - /bin/rm -rf /usr/share/nginx/html/*
@@ -73,6 +60,9 @@ resources:
       folderName: '${input.environment == "VMC" ? "Workload" : ""}'
       image: ubuntu
       flavor: small
+      remoteAccess:
+        authentication: publicPrivateKey
+        sshKey: '${input.sshKey}'
       cloudConfig: |
         runcmd: 
           - add-apt-repository universe

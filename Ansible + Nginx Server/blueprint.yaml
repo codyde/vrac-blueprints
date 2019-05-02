@@ -1,0 +1,33 @@
+formatVersion: 1
+inputs: {}
+resources:
+  Cloud_Machine_1:
+    type: Cloud.Machine
+    properties:
+      image: ubuntu
+      flavor: small
+      constraints:
+        - tag: 'env:vsphere'
+      cloudConfig: |
+        package_update: true
+        packages:
+          - python
+        users:
+          - name: root
+            ssh-authorized-keys:
+              - ssh-rsa <your ssh key>
+  Ansible:
+    type: Cloud.Ansible
+    properties:
+      inventoryFile: /etc/ansible/hosts
+      username: root
+      playbooks:
+        provision:
+          - /root/playbooks/web.yml
+      osType: linux
+      groups:
+        - webs
+      maxConnectionRetries: 10
+      host: '${resource.Cloud_Machine_1.*}'
+      account: Ansible-OSS
+      privateKeyFile: ~/.ssh/id_rsa

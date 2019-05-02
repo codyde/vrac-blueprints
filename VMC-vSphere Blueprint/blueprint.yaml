@@ -1,0 +1,19 @@
+formatVersion: 1
+inputs: {}
+resources:
+  Cloud_vSphere_Machine_1:
+    type: Cloud.vSphere.Machine
+    properties:
+      image: ubuntu
+      flavor: medium
+      customizationSpec: Linux Server
+      folderName: Workloads
+      networks:
+        - name: '${resource.Cloud_vSphere_Network_1.name}'
+  Cloud_vSphere_Network_1:
+    type: Cloud.vSphere.Network
+    properties:
+      name: Default
+      networkType: existing
+      constraints:
+        - tag: 'env:vmc'

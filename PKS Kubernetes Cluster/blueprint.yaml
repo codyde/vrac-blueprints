@@ -1,0 +1,22 @@
+formatVersion: 1
+inputs:
+  hostname:
+    type: string
+  size:
+    type: integer
+    minimum: 3
+    maximum: 6
+  plan:
+    type: string
+    enum:
+      - Small
+      - Medium
+      - Large
+resources:
+  K8S_Cluster_1:
+    type: Cloud.K8S.Cluster
+    properties:
+      hostname: '${input.hostname}'
+      workers: '${input.size}'
+      constraints:
+        - tag: '${"pks:" + to_lower(input.plan)}'
