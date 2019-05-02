@@ -1,0 +1,36 @@
+---
+project: CloudBuilders
+kind: PIPELINE
+name: Rollback - Dev Cluster
+enabled: true
+concurrency: 10
+ciWorkspace:
+  endpoint: ''
+  image: ''
+  registry: ''
+  path: ''
+  cache:
+  - ''
+stageOrder:
+- Clean
+stages:
+  Clean:
+    taskOrder:
+    - Remove K8s Resources
+    tasks:
+      Remove K8s Resources:
+        type: K8S
+        endpoints:
+          kubernetesServer: Dev-VKE-Cluster
+        input:
+          filePath: ''
+          commit: ''
+          namespace: ''
+          scmConstants: {
+            }
+          action: DELETE
+          filterByLabel: ''
+          continueOnConflict: false
+          timeout: '5'
+          yaml: "apiVersion: v1\r\nkind: Namespace\r\nmetadata:\r\n  name: demoapp-dev-namespace"
+          revision: n-1

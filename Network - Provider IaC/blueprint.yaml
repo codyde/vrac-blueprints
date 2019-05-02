@@ -1,0 +1,10 @@
+formatVersion: 1
+name: Provider IaC - Networks
+version: 1
+inputs: {}
+resources:
+  Provider_Network_1:
+    type: Cloud.NSX.Network
+    properties:
+      name: provider
+      networkType: outbound
