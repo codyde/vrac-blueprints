@@ -1,4 +1,6 @@
 formatVersion: 1
+name: PKS Kubernetes Cloud.K8S.Cluster
+version: 1
 inputs:
   hostname:
     type: string

@@ -1,4 +1,6 @@
 formatVersion: 1
+name: Azure VM + Redis
+version: 1
 inputs: {}
 resources:
   Cloud_Azure_Machine_1:
@@ -16,7 +18,7 @@ resources:
       name: testing
       family: C
       region: West US
-      account: Microsoft Azure
+      account: Azure
       capacity: 0
       sku_name: Basic
       redis_configuration: []

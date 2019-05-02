@@ -1,4 +1,6 @@
 formatVersion: 1
+Name: Ansible with NGINX
+version: 1
 inputs: {}
 resources:
   Cloud_Machine_1:

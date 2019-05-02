@@ -1,4 +1,6 @@
 formatVersion: 1
+name: vSphere Template Builder
+version: 1
 inputs:
   vcenter_server:
     type: string

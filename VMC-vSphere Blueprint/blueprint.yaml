@@ -1,4 +1,6 @@
 formatVersion: 1
+name: VMC vSphere Blueprint
+version: 1
 inputs: {}
 resources:
   Cloud_vSphere_Machine_1:
