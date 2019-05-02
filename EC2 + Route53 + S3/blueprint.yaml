@@ -13,7 +13,7 @@ resources:
       name: '${input.reservationname}'
       type: A
       zone_id: 12314142132
-      provider: Amazon Web Services
+      provider: AWS
       provider_region: us-west-1
       ttl: 300
       records:
@@ -28,6 +28,6 @@ resources:
     dependsOn:
       - Cloud_AWS_EC2_Instance_1
     properties:
-      provider: Amazon Web Services
+      provider: AWS
       provider_region: us-west-1
       acl: private
