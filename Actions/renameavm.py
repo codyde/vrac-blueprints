@@ -10,8 +10,6 @@ def handler(context, inputs):
     """
     old_name = inputs["resourceNames"][0]
     new_name = inputs["customProperties"]["newName"]
-    #Brand new comment
-    #Hey its syncing maybe... like the Titanic
 
     outputs = {}
     outputs["resourceNames"] = inputs["resourceNames"]
