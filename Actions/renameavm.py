@@ -11,7 +11,7 @@ def handler(context, inputs):
     old_name = inputs["resourceNames"][0]
     new_name = inputs["customProperties"]["newName"]
     #Brand new comment
-
+    #Oh Jonny boyyyyy
     outputs = {}
     outputs["resourceNames"] = inputs["resourceNames"]
     outputs["resourceNames"][0] = new_name
