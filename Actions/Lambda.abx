@@ -1,0 +1,17 @@
+---
+exportVersion: "1"
+exportId: "8a768f586b937c1f016b9aa6221209db"
+name: "Lambda"
+runtime: "python"
+entrypoint: "handler"
+inputs:
+  target: "World"
+timeoutSeconds: 180
+deploymentTimeoutSeconds: 600
+actionType: "SCRIPT"
+configuration:
+  const-providers:
+  - "aws"
+actionTemplateName: "Custom script"
+actionTemplateNamespace: "com.vmware.automation.abx"
+memoryInMB: 150
