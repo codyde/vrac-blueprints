@@ -8,10 +8,12 @@ inputs:
   target: "World"
 timeoutSeconds: 180
 deploymentTimeoutSeconds: 600
+dependencies: "requests"
 actionType: "SCRIPT"
 configuration:
   const-providers:
   - "aws"
+  const_azure-system_managed_identity: false
 actionTemplateName: "Custom script"
 actionTemplateNamespace: "com.vmware.automation.abx"
 memoryInMB: 150
