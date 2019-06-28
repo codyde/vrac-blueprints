@@ -8,6 +8,7 @@ inputs:
   target: "World"
 timeoutSeconds: 180
 deploymentTimeoutSeconds: 600
+dependencies: "requests"
 actionType: "SCRIPT"
 configuration:
   const-providers:
