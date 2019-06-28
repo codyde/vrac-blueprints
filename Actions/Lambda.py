@@ -1,4 +1,4 @@
-from botocore.vendored import requests
+from requests
 import json
 
 def handler(context, inputs):
