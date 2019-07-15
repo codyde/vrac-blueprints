@@ -1,0 +1,14 @@
+formatVersion: 1
+name: "Ansible Tower Extensibility"
+version: 1
+inputs: {}
+resources:
+  AnsibleTower:
+    type: Cloud.Machine
+    properties:
+      image: ubuntu
+      flavor: small
+      enable_tower: true
+      sshKeyName: cmbu-tower
+      constraints:
+        - tag: 'env:aws'
