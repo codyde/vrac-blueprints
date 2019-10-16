@@ -1,0 +1,80 @@
+name: Ubuntu 18.04 Docker Host
+version: 1
+formatVersion: 1
+expire: false
+inputs:
+  cloud:
+    title: Pick an Endpoint
+    type: string
+    enum:
+      - vsphere
+      - aws
+  name:
+    type: string
+    title: VM Name
+  image:
+    title: Pick an OS
+    type: string
+    enum:
+      - ubuntu
+  size:
+    title: Pick a Size
+    type: string
+    enum:
+      - small
+      - medium
+      - large
+  username:
+    title: Username
+    type: string
+  password:
+    title: Password
+    type: string
+    encrypted: true
+    default: VMware1!
+resources:
+  Single_Machine:
+    type: Cloud.Machine
+    properties:
+      constraints:
+        - tag: '${"env:" + to_lower(input.cloud)}'
+      image: '${input.image}'
+      flavor: '${input.size}'
+      name: '${input.name}'
+      cloudConfig: |
+        #cloud-config
+        ssh_pwauth: yes
+        chpasswd:
+          list: |
+            ${input.username}:${input.password}
+          expire: false
+        users:
+          - default
+          - name: ${input.username}
+            passwd: ${input.password}
+            lock_passwd: false
+            sudo: ['ALL=(ALL) NOPASSWD:ALL']
+            groups: [wheel, sudo, admin]
+            shell: '/bin/bash'
+        repo_update: true
+        repo_upgrade: all
+
+        preserve_hostname: false
+        hostname: ${input.name}
+        manage_etc_hosts: true
+
+        packages:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+            
+        runcmd:
+          - /usr/bin/curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+          - apt-key fingerprint 0EBFCD88 -y 
+          - add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+          - apt-get update -y 
+          - apt-get install docker-ce -y
+          - /bin/sed -i 's@ExecStart=/usr/bin/dockerd -H fd://@ExecStart=/usr/bin/dockerd -H tcp://0.0.0.0:2375 -H unix:///var/run/docker.sock@' /lib/systemd/system/docker.service
+          - /bin/systemctl daemon-reload
+          - /bin/systemctl restart docker

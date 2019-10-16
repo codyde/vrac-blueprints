@@ -1,0 +1,66 @@
+name: Custom Username and Password - CloudInit
+version: v1
+formatVersion: 1
+inputs:
+  hostname:
+    type: string
+  username:
+    type: string
+    title: Username
+    default: adminuser
+  password:
+    type: string
+    title: Password
+    encrypted: true
+    default: VMware123!
+resources:
+  web1:
+    type: Cloud.Machine
+    networks:
+      - name: '${Cloud_Network_1.name}'
+    properties:
+      count: 1
+      image: Ubuntu
+      constraints:
+        - tag: 'env:vsphere'
+      flavor: medium
+      cloudConfig: |
+        #cloud-config
+        hostname: ${input.hostname}
+        ssh_pwauth: yes
+        chpasswd:
+          list: |
+            ${input.username}:${input.password}
+          expire: false
+        users:
+          - default
+          - name: ${input.username}
+            passwd: ${input.password}
+            lock_passwd: false
+            sudo: ['ALL=(ALL) NOPASSWD:ALL']
+            groups: [wheel, sudo, admin]
+            shell: '/bin/bash'
+        runcmd:
+          - echo "Defaults:${input.username}"
+          - sudo apt update
+          - sudo apt install nginx curl git -y 
+          - /usr/bin/git clone https://github.com/codyde/cas-demo-application /tmp/cas-demo-application
+          - /bin/rm -rf /etc/nginx/conf.d/
+          - /bin/rm -rf /usr/share/nginx/html/
+          - /usr/bin/curl -sL https://deb.nodesource.com/setup_10.x | sudo bash -
+          - /usr/bin/apt install nodejs -y
+          - /usr/bin/npx @angular/cli analytics off
+          - /usr/bin/npm install -g @angular/cli
+          - cd /tmp/cas-demo-application && /usr/bin/npm install
+          - /usr/bin/ng build --prod
+          - /bin/cp -R /tmp/cas-demo-application/dist/cmbu-demo-application/ /usr/share/nginx/html/
+          - /bin/sed -i "s@root /var/www/html@root /usr/share/nginx/html@" /etc/nginx/sites-available/default
+          - /bin/systemctl restart nginx
+      hostname: '${input.hostname}'
+      networks:
+        - name: '${AppNetwork.name}'
+          network: '${resource.AppNetwork.id}'
+  AppNetwork:
+    type: Cloud.Network
+    properties:
+      networkType: existing

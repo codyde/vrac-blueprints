@@ -1,0 +1,37 @@
+formatVersion: 1
+Name: Kubernetes Single Node (Ansible)
+version: 1
+inputs: {}
+resources:
+  kubernetes:
+    type: Cloud.Ansible
+    properties:
+      authentication: usernamePassword
+      inventoryFile: /etc/ansible/hosts
+      username: root
+      password: VMware123!
+      playbooks:
+        provision:
+          - /root/playbooks/kubernetes.yml
+      osType: linux
+      groups:
+        - kubernetes
+      maxConnectionRetries: 10
+      host: '${resource.machine.*}'
+      account: Ansible
+  machine:
+    type: Cloud.Machine
+    properties:
+      image: ubuntu
+      flavor: medium
+      constraints:
+        - tag: 'env:vsphere'
+      cloudConfig: |
+        package_update: true
+        packages:
+          - python
+          - perl
+        users:
+          - name: root
+            ssh-authorized-keys:
+              - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDVKM7LG59dNc6RscfI/ruSRhU5Bvheb66fzSD3ctQSGnbtkxzvMRHnFTINjzkqYrP3zU8eDBJ6oKEDDQgdZ2bNXClX423Ccm00u8b+oHOOeQRk6EthpGutfgTs6KOD59PWWsqUu7F/cu/dfUAnwSOr+iLtM8zlId1AOr0qCJtD2Da2Ee6SKJA6AoV6wgQy2nhdM2t3ZICeL4waRw/dLkWz92pUrpB7p0Lol0HZy8c9TffBfTBTKy2rxlSxZyyC5yKbaY5D4Z2KVm0pFti/vr6BoGoXRgl0my3GnIdK4MPEFODyhkHKjNQQW0lv9fBcB5EZ3WqPuvn3aK0x7zuXQWJd

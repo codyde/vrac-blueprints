@@ -1,0 +1,118 @@
+formatVersion: 1
+name: Kubernetes Multi-Master (Wardroom)
+version: 1
+inputs: {}
+resources:
+  nginxprep:
+    type: Cloud.Ansible
+    dependsOn:
+      - primary-master
+      - second-master
+      - worker-ansible
+    properties:
+      host: '${resource.nginx.*}'
+      osType: linux
+      account: Ansible
+      username: root
+      inventoryFile: /etc/ansible/hosts
+      privateKeyFile: ~/.ssh/id_rsa
+      groups:
+        - nginxprep
+      playbooks:
+        provision:
+          - /root/playbooks/nginxprep.yml
+  primary-master:
+    type: Cloud.Ansible
+    properties:
+      host: '${resource.pmaster.*}'
+      osType: linux
+      account: Ansible
+      username: root
+      inventoryFile: /etc/ansible/hosts
+      privateKeyFile: ~/.ssh/id_rsa
+      groups:
+        - masters
+        - primary_master
+        - etcd
+  second-master:
+    type: Cloud.Ansible
+    properties:
+      host: '${resource.smaster.*}'
+      count: 2
+      osType: linux
+      account: Ansible
+      username: root
+      inventoryFile: /etc/ansible/hosts
+      privateKeyFile: ~/.ssh/id_rsa
+      groups:
+        - masters
+        - etcd
+  worker-ansible:
+    type: Cloud.Ansible
+    properties:
+      count: 3
+      host: '${resource.worker.*}'
+      osType: linux
+      account: Ansible
+      username: root
+      inventoryFile: /etc/ansible/hosts
+      privateKeyFile: ~/.ssh/id_rsa
+      groups:
+        - nodes
+  nginx:
+    type: Cloud.vSphere.Machine
+    properties:
+      name: nginx
+      folderName: k8s
+      customizationSpec: Linux Server
+      image: ubuntu
+      flavor: medium
+      constraints:
+        - tag: 'env:vsphere'
+      networks:
+        - network: '${resource.Cloud_Network_1.id}'
+  pmaster:
+    type: Cloud.vSphere.Machine
+    name: master
+    properties:
+      folderName: k8s
+      customizationSpec: Linux Server
+      image: ubuntu
+      flavor: medium
+      constraints:
+        - tag: 'env:vsphere'
+      name: pmaster
+      networks:
+        - network: '${resource.Cloud_Network_1.id}'
+  smaster:
+    type: Cloud.vSphere.Machine
+    properties:
+      count: 2
+      folderName: k8s
+      customizationSpec: Linux Server
+      image: ubuntu
+      flavor: medium
+      constraints:
+        - tag: 'env:vsphere'
+      name: smaster
+      networks:
+        - network: '${resource.Cloud_Network_1.id}'
+  worker:
+    type: Cloud.vSphere.Machine
+    properties:
+      folderName: k8s
+      customizationSpec: Linux Server
+      name: worker
+      count: 3
+      image: ubuntu
+      flavor: medium
+      constraints:
+        - tag: 'env:vsphere'
+      networks:
+        - network: '${resource.Cloud_Network_1.id}'
+  Cloud_Network_1:
+    type: Cloud.Network
+    properties:
+      networkType: existing
+      constraints:
+        - tag: 'net:vm'
